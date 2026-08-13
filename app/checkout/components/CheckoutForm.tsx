@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
@@ -46,12 +46,28 @@ export default function CheckoutForm() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Refs for polling control
+  const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isPollingRef = useRef(false);
+  const stopPollingRef = useRef(false);
+
   const subtotal = items.reduce(
     (total, item) => total + item.product.price * item.quantity,
     0,
   );
 
   const total = subtotal + shippingCost;
+
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      stopPollingRef.current = true;
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+      }
+      isPollingRef.current = false;
+    };
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -72,9 +88,89 @@ export default function CheckoutForm() {
     setFormData({ ...formData, shippingMethod: method });
   };
 
+  // Enhanced polling function with more attempts and longer timeout
+  const pollPaymentStatus = async (
+    orderId: number,
+    checkoutRequestID: string,
+  ): Promise<{ success: boolean; status: string; isPaid: boolean }> => {
+    console.log(`🔍 Starting payment polling for order ${orderId}`);
+
+    let attempts = 0;
+    const maxAttempts = 20; // 20 attempts = ~100 seconds (1.6 minutes)
+    const pollInterval = 5000; // 5 seconds between checks
+
+    // Wait 15 seconds first to give user time to enter PIN
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+
+    while (attempts < maxAttempts) {
+      attempts++;
+
+      // Check if polling should stop
+      if (stopPollingRef.current) {
+        console.log("🛑 Polling stopped by user");
+        return {
+          success: false,
+          status: "cancelled",
+          isPaid: false,
+        };
+      }
+
+      console.log(
+        `🔍 Poll attempt ${attempts}/${maxAttempts} for ${checkoutRequestID}`,
+      );
+
+      try {
+        const data = await checkPaymentStatus(checkoutRequestID);
+        console.log("📊 Payment status data:", data);
+
+        // Check if payment is completed
+        if (data.isPaid || data.status === "completed") {
+          console.log("✅ Payment confirmed SUCCESS!");
+          setPaymentDetails(data);
+          await clearCart();
+          router.push(`/order/confirmation/${orderId}`);
+          return {
+            success: true,
+            status: "paid",
+            isPaid: true,
+          };
+        }
+
+        // If status is failed, break early
+        if (data.status === "failed") {
+          console.log("❌ Payment failed");
+          return {
+            success: false,
+            status: "failed",
+            isPaid: false,
+          };
+        }
+
+        console.log(`⏳ Payment pending: ${data.message || "Processing..."}`);
+
+        // Wait before next attempt
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      } catch (error: any) {
+        console.log(`⚠️ Poll error (attempt ${attempts}): ${error.message}`);
+        // Don't fail on network errors, keep trying
+        if (attempts < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        }
+      }
+    }
+
+    console.log("⏰ Polling timeout - payment not confirmed");
+    return {
+      success: false,
+      status: "timeout",
+      isPaid: false,
+    };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    stopPollingRef.current = false;
 
     try {
       const orderData = {
@@ -114,24 +210,19 @@ export default function CheckoutForm() {
       }
       setCreatedOrderId(orderId);
 
-      // If M-Pesa, initiate payment
       if (formData.paymentMethod === "mpesa") {
         setShowPaymentModal(true);
         setPaymentStatus("processing");
 
-        let paymentResult: any;
-
-        const initiatingPayment = async () => {
-          paymentResult = await initiatePayment({
+        try {
+          const paymentResult = await initiatePayment({
             orderId,
             phoneNumber: formData.phone,
             amount: Math.round(total),
           });
-        };
 
-        setTimeout(initiatingPayment, 10000);
+          console.log("Payment result:", paymentResult);
 
-        if (paymentResult?.success) {
           const checkoutRequestID = paymentResult?.checkoutRequestID;
           if (!checkoutRequestID) {
             setPaymentStatus("error");
@@ -139,14 +230,45 @@ export default function CheckoutForm() {
             return;
           }
           setCheckoutRequestID(checkoutRequestID);
-          // Start polling for payment status
-          pollPaymentStatus(orderId, checkoutRequestID);
-        } else {
+
+          console.log(
+            "✅ Payment initiated! Check phone for M-Pesa PIN prompt...",
+          );
+          setPaymentStatus("pending");
+
+          // Start polling (will wait 15 seconds before first check)
+          const paymentResultStatus = await pollPaymentStatus(
+            orderId,
+            checkoutRequestID,
+          );
+
+          console.log("Final payment result:", paymentResultStatus);
+
+          if (paymentResultStatus.isPaid) {
+            setPaymentStatus("success");
+            // Router will push after 3 seconds in the success case
+            setTimeout(() => {
+              router.push(`/order/confirmation/${orderId}`);
+            }, 3000);
+          } else {
+            setPaymentStatus("error");
+            const errorMsg =
+              paymentResultStatus.status === "timeout"
+                ? "Payment timed out. Please check your M-Pesa and try again."
+                : paymentResultStatus.status === "failed"
+                  ? "Payment was declined. Please try again."
+                  : "Payment failed. Please try again.";
+            setPaymentError(errorMsg);
+          }
+        } catch (error: any) {
+          console.error("Payment initiation error:", error);
           setPaymentStatus("error");
-          setPaymentError(paymentResult?.message || "Payment failed");
+          setPaymentError(
+            error.message || "Payment initiation failed. Please try again.",
+          );
         }
       } else {
-        // Non-M-Pesa payment
+        // Cash payment
         await clearCart();
         router.push(`/order/confirmation/${orderId}`);
       }
@@ -160,51 +282,10 @@ export default function CheckoutForm() {
     }
   };
 
-  const pollPaymentStatus = async (
-    orderId: number,
-    checkoutRequestID: string,
-  ) => {
-    let attempts = 0;
-    const maxAttempts = 12;
-
-    const checkStatus = async () => {
-      attempts++;
-      try {
-        const data = await checkPaymentStatus(checkoutRequestID);
-
-        if (data.isPaid) {
-          setPaymentStatus("success");
-          setPaymentDetails(data);
-          clearCart();
-          setTimeout(() => {
-            router.push(`/order/confirmation/${orderId}`);
-          }, 3000);
-          return;
-        }
-
-        if (attempts < maxAttempts) {
-          setTimeout(checkStatus, 5000);
-        } else {
-          setPaymentStatus("error");
-          setPaymentError("Payment timed out. Please check your M-Pesa.");
-        }
-      } catch (error: unknown) {
-        if (attempts < maxAttempts) {
-          setTimeout(checkStatus, 5000);
-        } else {
-          setPaymentStatus("error");
-          const message =
-            error instanceof Error ? error.message : String(error);
-          setPaymentError(message || "Failed to verify payment status");
-        }
-      }
-    };
-
-    setTimeout(checkStatus, 10000);
-  };
-
   const handleRetryPayment = async () => {
     if (!createdOrderId) return;
+    stopPollingRef.current = false;
+
     setPaymentStatus("processing");
     setPaymentError("");
 
@@ -215,18 +296,39 @@ export default function CheckoutForm() {
         amount: Math.round(total),
       });
 
-      if (result.success) {
+      if (result?.success) {
         const requestID = result.checkoutRequestID || "";
         setCheckoutRequestID(requestID);
-        pollPaymentStatus(createdOrderId, requestID);
+        console.log("✅ Retry payment initiated!");
+        setPaymentStatus("pending");
+
+        const paymentResult = await pollPaymentStatus(
+          createdOrderId,
+          requestID,
+        );
+
+        if (paymentResult.isPaid) {
+          setPaymentStatus("success");
+          setTimeout(() => {
+            router.push(`/order/confirmation/${createdOrderId}`);
+          }, 3000);
+        } else {
+          setPaymentStatus("error");
+          setPaymentError(
+            paymentResult.status === "timeout"
+              ? "Payment timed out. Please check your M-Pesa."
+              : "Payment failed. Please try again.",
+          );
+        }
       } else {
         setPaymentStatus("error");
-        setPaymentError(result.message || "Payment failed");
+        setPaymentError(result?.message || "Payment failed");
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       setPaymentStatus("error");
-      const message = error instanceof Error ? error.message : String(error);
-      setPaymentError(message || "Something went wrong");
+      setPaymentError(
+        error.message || "Payment initiation failed. Please try again.",
+      );
     }
   };
 
@@ -242,6 +344,7 @@ export default function CheckoutForm() {
         calculatedTotal={total}
         onClose={() => {
           setShowPaymentModal(false);
+          stopPollingRef.current = true;
           if (paymentStatus === "success") {
             router.push(`/order/confirmation/${createdOrderId}`);
           }
@@ -507,7 +610,7 @@ export default function CheckoutForm() {
                 {formData.paymentMethod === "mpesa" && (
                   <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <p className="text-sm text-green-800">
-                      Enter your biiling information below. You will receive an
+                      Enter your billing information below. You will receive an
                       M-Pesa payment request on your phone. Please enter your
                       M-Pesa PIN to complete the payment.
                     </p>
