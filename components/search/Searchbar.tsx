@@ -9,26 +9,30 @@ export default function Searchbar() {
   const { setResults, setIsOpen, setQuery: setSearchQuery } = useSearchStore();
 
   useEffect(() => {
-    const handleSearch = async (searchTerm: string) => {
-      if (searchTerm.trim()) {
+    const delayDebounce = setTimeout(async () => {
+      const searchTerm = query.trim();
+
+      if (searchTerm) {
         try {
-          const response = await api.get(`/product/search?q=${searchTerm}`);
-          setResults(response.data.data?.products || []);
+          const response = await api.get(
+            `/product/search?q=${encodeURIComponent(searchTerm)}`,
+          );
+          // Handle the response based on your API structure
+          const products =
+            response.data?.data?.products || response.data?.products || [];
+          setResults(products);
           setSearchQuery(searchTerm);
           setIsOpen(true);
         } catch (error) {
           console.error("Search error:", error);
           setResults([]);
+          setIsOpen(false);
         }
       } else {
         setResults([]);
         setSearchQuery("");
         setIsOpen(false);
       }
-    };
-
-    const delayDebounce = setTimeout(() => {
-      handleSearch(query);
     }, 300);
 
     return () => clearTimeout(delayDebounce);

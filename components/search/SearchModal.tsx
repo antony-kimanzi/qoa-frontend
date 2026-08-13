@@ -4,6 +4,7 @@ import { useSearchStore } from "@/store/searchStore";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { formatCurrency } from "@/utils/helpers";
+import { Product } from "@/lib/types";
 
 export default function SearchModal() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function SearchModal() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-white rounded-lg shadow-xl max-h-[70vh] overflow-y-auto animate-slide-up">
-          <div className="p-4 border-b">
+          <div className="p-4 border-b sticky top-0 bg-white z-10">
             <h3 className="font-semibold">
               {query ? <>Results for &quot;{query}&quot;</> : "Search Results"}
             </h3>
@@ -34,7 +35,7 @@ export default function SearchModal() {
           <div className="p-4">
             {results.length > 0 ? (
               <div className="space-y-2">
-                {results.map((product) => (
+                {results.map((product: Product) => (
                   <div
                     key={product.id}
                     onClick={() => handleResultClick(product.id)}
@@ -42,7 +43,7 @@ export default function SearchModal() {
                   >
                     <div className="relative w-12 h-12 flex-shrink-0">
                       <Image
-                        src={product.imageUrl}
+                        src={product.imageUrl || "/placeholder-image.png"}
                         alt={product.name}
                         fill
                         className="object-cover rounded"
@@ -51,6 +52,11 @@ export default function SearchModal() {
                     <div className="flex-1">
                       <p className="font-medium">{product.name}</p>
                       <p className="text-sm text-gray-600">{product.brand}</p>
+                      {product.sex && (
+                        <span className="text-xs text-gray-400">
+                          {product.sex}
+                        </span>
+                      )}
                     </div>
                     <p className="font-semibold">
                       {formatCurrency(product.price)}

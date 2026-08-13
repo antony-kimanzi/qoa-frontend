@@ -16,6 +16,7 @@ export default function Navbar() {
   const logout = useAuthStore((state) => state.logout);
   const items = useCartStore((state) => state.items);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -28,9 +29,27 @@ export default function Navbar() {
     <>
       <nav className="sticky top-0 z-50 bg-white shadow-sm border-b">
         <div className="container mx-auto px-4">
+          {/* Search Bar - Mobile (expanded) */}
+          {isMobileSearchOpen && (
+            <div className="md:hidden py-2 border-b">
+              <div className="relative">
+                <Searchbar />
+                <button
+                  onClick={() => setIsMobileSearchOpen(false)}
+                  className="absolute right-0 top-1/2 transform -translate-y-1/2 mr-2 text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link href="/" className="text-xl font-bold text-gray-800">
+            <Link
+              href="/"
+              className="text-xl font-bold text-gray-800 flex-shrink-0"
+            >
               <Image
                 src="https://res.cloudinary.com/dhnyfifkc/image/upload/v1784716087/Queen-of-aroma-logo_j9alhn.png"
                 alt="queen-of-aroma-logo"
@@ -38,6 +57,7 @@ export default function Navbar() {
                 priority={true}
                 width={70}
                 height={70}
+                className="h-14 w-auto"
               />
             </Link>
 
@@ -49,10 +69,10 @@ export default function Navbar() {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-6">
               <Link
-                href="/shop"
-                className={`hover:text-gray-600 ${isActive("/shop") ? "text-gray-900 font-bold" : ""}`}
+                href="/products"
+                className={`hover:text-gray-600 ${isActive("/products") ? "text-gray-900 font-bold" : ""}`}
               >
-                Shop
+                Products
               </Link>
               <Link
                 href="/contact"
@@ -152,10 +172,34 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="md:hidden flex flex-row gap-10">
+            <div className="md:hidden flex flex-row gap-4 items-center">
+              {/* Mobile Search Toggle Button */}
+              {!isMobileSearchOpen && (
+                <button
+                  onClick={() => setIsMobileSearchOpen(true)}
+                  aria-label="Toggle search"
+                  className="text-gray-700 hover:text-black"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                    />
+                  </svg>
+                </button>
+              )}
+
               <Link
                 href="/cart"
-                className={`relative hover:text-gray-600${isActive("/cart") ? "text-gray-900 font-semibold" : ""}`}
+                className={`relative hover:text-gray-600 ${isActive("/cart") ? "text-gray-900 font-semibold" : ""}`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -185,9 +229,11 @@ export default function Navbar() {
                   </span>
                 )}
               </Link>
+
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 aria-label="Toggle menu"
+                className="text-gray-700 hover:text-black"
               >
                 {isMenuOpen ? (
                   <svg
