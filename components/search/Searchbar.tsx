@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useSearchStore } from "@/store/searchStore";
-import { api } from "@/lib/axios";
+import { searchProductByQuery } from "@/data/product";
 
 export default function Searchbar() {
   const [query, setQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { setResults, setIsOpen, setQuery: setSearchQuery } = useSearchStore();
 
   useEffect(() => {
@@ -13,25 +14,38 @@ export default function Searchbar() {
       const searchTerm = query.trim();
 
       if (searchTerm) {
+        setIsLoading(true);
         try {
-          const response = await api.get(
-            `/product/search?q=${encodeURIComponent(searchTerm)}`,
-          );
-          // Handle the response based on your API structure
-          const products =
-            response.data?.data?.products || response.data?.products || [];
+          console.log("Searching for:", searchTerm);
+          const response = await searchProductByQuery(searchTerm);
+
+          console.log("Search response: Response:", response);
+          console.log("Search response: Response data:", response.data);
+
+          // Normalize response to handle AxiosResponse or direct object
+          const respData = (response as any)?.data ?? (response as any);
+          const products = respData?.products || respData?.data?.products || [];
           setResults(products);
           setSearchQuery(searchTerm);
           setIsOpen(true);
         } catch (error) {
-          console.error("Search error:", error);
+          console.error("Search error details:", error);
+          if (error instanceof Error && "response" in error) {
+            const err = error as any;
+            console.error("Response data:", err.response.data);
+            console.error("Response status:", err.response.status);
+            console.error("Response headers:", err.response.headers);
+          }
           setResults([]);
           setIsOpen(false);
+        } finally {
+          setIsLoading(false);
         }
       } else {
         setResults([]);
         setSearchQuery("");
         setIsOpen(false);
+        setIsLoading(false);
       }
     }, 300);
 
@@ -46,6 +60,7 @@ export default function Searchbar() {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search perfumes..."
         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+        disabled={isLoading}
       />
       {query && (
         <button
@@ -59,6 +74,11 @@ export default function Searchbar() {
         >
           ✕
         </button>
+      )}
+      {isLoading && (
+        <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+        </div>
       )}
     </div>
   );

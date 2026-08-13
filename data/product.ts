@@ -9,3 +9,11 @@ export async function fetchProductById(id: number) {
   const response = await api.get(`/product/${id}`);
   return response.data;
 }
+
+export async function searchProductByQuery(searchTerm: string) {
+  const response = await api.get(
+    `/product/search?q=${encodeURIComponent(searchTerm)}`,
+  );
+
+  return response
+}
