@@ -24,31 +24,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const fullScreenRoutes = ["/signin", "/signup", "/login", "/register"];
   const isFullScreenRoute = fullScreenRoutes.includes(pathname || "");
-  const navbarRoutes = ["/checkout", "/cart"];
-  const isNavbarRoute = navbarRoutes.includes(pathname || "");
+  const noFooterRoutes = ["/checkout", "/cart"];
+  const isNoFooterRoute = noFooterRoutes.includes(pathname || "");
 
   if (isFullScreenRoute) {
     return <>{children}</>;
-  }
-
-  if (isNavbarRoute) {
-    return (
-      <>
-        <Navbar />
-        <main className="min-h-screen font-body">{children}</main>
-      </>
-    );
   }
 
   if (isLoading) {
     return <PageLoader />;
   }
 
+  // If it's a no-footer route (checkout/cart), just show navbar and content
+  if (isNoFooterRoute) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-1">{children}</main>
+      </div>
+    );
+  }
+
+  // Default: Show navbar, content, and footer
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="min-h-screen">{children}</main>
+      <main className="flex-1">{children}</main>
       <Footer />
-    </>
+    </div>
   );
 }
