@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { Product } from "@/lib/types";
 
-interface SearchStore {
+interface SearchState {
   query: string;
   results: Product[];
   isOpen: boolean;
@@ -11,7 +11,7 @@ interface SearchStore {
   clearSearch: () => void;
 }
 
-export const useSearchStore = create<SearchStore>((set) => ({
+export const useSearchStore = create<SearchState>((set) => ({
   query: "",
   results: [],
   isOpen: false,
