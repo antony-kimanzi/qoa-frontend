@@ -10,23 +10,6 @@ export const api = axios.create({
   withCredentials: true, // Important: sends cookies with requests
 });
 
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
-
-const processQueue = (error: unknown = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(null);
-    }
-  });
-  failedQueue = [];
-};
-
 // Helper: Check if endpoint is public (no auth required)
 const isPublicEndpoint = (url: string = ""): boolean => {
   const publicEndpoints = ["/auth/login", "/auth/register", "/auth/refresh"];
@@ -43,55 +26,21 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Only handle 401 errors
-    if (error.response?.status !== 401 || error.response?.status !== 403) {
-      return Promise.reject(error);
-    }
+    // Handle 401 errors - the guard will handle refresh automatically
+    // Just reject and let the app handle it (e.g., redirect to login)
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // Clear any client-side state if needed
+      // The server has already attempted refresh via the guard
+      // If we get here, it means the guard couldn't refresh the token
 
-    // Prevent infinite retry loop
-    if (originalRequest._retry) {
-      // Refresh failed - redirect to login
+      // Redirect to login page
       if (typeof window !== "undefined") {
+        // Optionally clear any client-side storage
         window.location.href = "/";
       }
       return Promise.reject(error);
     }
 
-    originalRequest._retry = true;
-
-    // If refresh is already in progress, queue this request
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      })
-        .then(() => api(originalRequest))
-        .catch((err) => Promise.reject(err));
-    }
-
-    isRefreshing = true;
-
-    try {
-      // Attempt to refresh the token
-      // The refresh token is automatically sent via cookies (withCredentials: true)
-      // Even though we can't see it in JavaScript, the browser sends it automatically
-      const response = await api.post("/auth/refresh");
-
-      // Process queued requests
-      processQueue();
-
-      // Retry the original request with new cookies
-      return api(originalRequest);
-    } catch (refreshError) {
-      // Refresh failed - reject all queued requests
-      processQueue(refreshError);
-
-      // Redirect to login
-      if (typeof window !== "undefined") {
-        window.location.href = "/";
-      }
-      return Promise.reject(refreshError);
-    } finally {
-      isRefreshing = false;
-    }
+    return Promise.reject(error);
   },
 );
