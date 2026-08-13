@@ -34,11 +34,11 @@ export default function Menubar({ setOpen }: MenubarProps) {
             Home
           </Link>
           <Link
-            href="/shop"
+            href="/products"
             className={`hover:text-gray-600 ${isActive("/products") ? "text-gray-900 font-semibold bg-gray-100" : ""}`}
             onClick={() => setOpen(false)}
           >
-            Shop
+            Products
           </Link>
           <Link
             href="/contact"
