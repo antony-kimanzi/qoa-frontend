@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import AppLayout from "@/components/layout/AppLayout";
 import { NotificationProvider } from "@/contexts/NotificationContext";
-// import { Analytics } from "@vercel/analytics/next";
+import { Analytics } from "@vercel/analytics/next";
 
 // Import Inter from Google Fonts (built-in)
 import { Inter, Cormorant_Garamond } from "next/font/google";
@@ -39,7 +39,7 @@ export default function RootLayout({
           <AppLayout>
             {children}
             {/* added analytics for vercel to check user interactions */}
-            {/* <Analytics /> */}
+            <Analytics />
           </AppLayout>
         </NotificationProvider>
       </body>
