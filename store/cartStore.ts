@@ -33,7 +33,9 @@ export const useCartStore = create<CartStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await getCart();
+      console.log("Response:", response);
       const cart = response?.data?.cart;
+      console.log("Cart:", cart);
       set({
         cart: cart,
         items: cart?.items || [],
