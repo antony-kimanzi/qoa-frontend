@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
 import { formatCurrency } from "@/utils/helpers";
+import { useState } from "react";
 
 interface ProductCardProps {
   product: Product;
@@ -14,14 +15,22 @@ export default function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const isAdding = useCartStore((state) => state.isLoading);
   const cart = useCartStore((state) => state.cart);
+  const [productId, setProductId] = useState<number | null>(null);
 
   const checkCartItem = (productId: number) => {
     return !!cart?.items?.some((item) => item.productId === productId);
   };
 
-  const handleAddToCart = async (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent, productId: number) => {
     e.preventDefault();
-    await addItem(product.id);
+    setProductId(productId);
+    try {
+      await addItem(productId);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setProductId(null);
+    }
   };
 
   return (
@@ -60,11 +69,13 @@ export default function ProductCard({ product }: ProductCardProps) {
             </span>
           ) : (
             <button
-              onClick={handleAddToCart}
+              onClick={(e) => handleAddToCart(e, product.id)}
               disabled={isAdding || checkCartItem(product.id)}
               className="w-full mt-3 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors text-sm"
             >
-              {isAdding ? "Adding..." : "Add to Cart"}
+              {isAdding && productId === product.id
+                ? "Adding..."
+                : "Add to Cart"}
             </button>
           )}
         </div>

@@ -8,6 +8,7 @@ import { fetchProducts } from "@/data/product";
 
 const FeaturedCollections = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [productId, setProductId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const cart = useCartStore((state) => state.cart);
@@ -20,11 +21,13 @@ const FeaturedCollections = () => {
     productId: number,
   ) => {
     e.preventDefault();
+    setProductId(productId);
     try {
       await addItem(productId);
-      await fetchCart();
     } catch (error) {
       console.error(error);
+    } finally {
+      setProductId(null);
     }
   };
 
@@ -121,7 +124,9 @@ const FeaturedCollections = () => {
                   disabled={isAdding || checkCartItem(product.id)}
                   className="w-full mt-3 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors text-sm"
                 >
-                  {isAdding ? "Adding..." : "Add to Cart"}
+                  {isAdding && productId === product.id
+                    ? "Adding..."
+                    : "Add to Cart"}
                 </button>
               )}
             </div>
