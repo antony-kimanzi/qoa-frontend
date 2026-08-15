@@ -1,7 +1,9 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1",
+  baseURL:
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://qoa-backend-production.up.railway.app/api/v1",
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
@@ -33,11 +35,11 @@ api.interceptors.response.use(
       // The server has already attempted refresh via the guard
       // If we get here, it means the guard couldn't refresh the token
 
-      // Redirect to login page
-      if (typeof window !== "undefined") {
-        // Optionally clear any client-side storage
-        window.location.href = "/";
-      }
+      // // Redirect to login page
+      // if (typeof window !== "undefined") {
+      //   // Optionally clear any client-side storage
+      //   window.location.href = "/";
+      // }
       return Promise.reject(error);
     }
 
