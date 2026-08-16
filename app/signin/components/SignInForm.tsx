@@ -193,6 +193,30 @@ const SignInForm = () => {
             Sign Up
           </a>
         </p>
+        <Link
+          href={"/products"}
+          className="flex flex-row justify-center gap-2 text-black text-sm"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 21 21"
+            height="21"
+            width="21"
+          >
+            <g id="Arrow-Top-Right">
+              <path
+                id="Union"
+                fill="#000000"
+                d="M17.243625 7.256243749999999c0.34168750000000003 0.34169625000000003 0.34168750000000003 0.89558875 0 1.2373025000000002l-4.8125 4.812491250000001 -1.23725 -1.2373375 3.3187875 -3.3188050000000002H6.125V17.4999125H4.375V7.8748949999999995c0.000035 -0.452935 0.34419 -0.82581625 0.7852775000000001 -0.87073L5.25 6.999895h9.262662500000001L11.193874999999998 3.6810462499999996l1.23725 -1.2373025000000002z"
+                stroke-width="0.875"
+              ></path>
+            </g>
+          </svg>
+          <span className="underline hover:text-sky-400 hover:underline-sky-400 transition delay-150 duration-300 ease-in-out">
+            Go back to shopping.
+          </span>
+        </Link>
       </form>
     </div>
   );
