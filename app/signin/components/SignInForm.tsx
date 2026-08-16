@@ -56,6 +56,7 @@ const SignInForm = () => {
         setLocalError(result.error || "Invalid email or password");
         setIsSubmitting(false);
       }
+      setIsSubmitting(false);
     } catch (err) {
       console.error("Login error:", err);
       setLocalError("An error occurred. Please try again.");

@@ -65,6 +65,7 @@ const SignUpForm = () => {
         setLocalError(result.error || "Registration failed");
         setIsSubmitting(false);
       }
+      setIsSubmitting(false);
     } catch (err) {
       console.error("Registration error:", err);
       setLocalError("An error occurred. Please try again.");
