@@ -35,7 +35,15 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    console.log("📥 Response:", {
+      status: response.status,
+      headers: response.headers,
+      // Check if Set-Cookie header exists
+      setCookie: response.headers["set-cookie"],
+    });
+    return response.data;
+  },
   async (error) => {
     const originalRequest = error.config;
 
