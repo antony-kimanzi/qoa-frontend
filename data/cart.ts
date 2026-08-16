@@ -16,7 +16,7 @@ export async function updateCartItem(itemId: number, quantity: number) {
 }
 
 export async function removeCartItem(itemId: number) {
-  const response = await api.delete(`/cart/item/${itemId}`);
+  const response = await api.delete(`/cart/${itemId}`);
   return response;
 }
 
