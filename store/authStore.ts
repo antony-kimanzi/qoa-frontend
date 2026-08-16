@@ -60,6 +60,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
       console.log("Response data:", response?.data);
 
       if (response?.data?.user) {
+        console.log("Received user data:", response?.data?.user);
+
         set({
           user: response?.data?.user,
           isLoading: false,
@@ -89,6 +91,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       console.log("Response data:", response?.data);
 
       if (response?.data?.user) {
+        console.log("Received user data:", response?.data?.user);
         set({
           user: response.data.user,
           isLoading: false,
