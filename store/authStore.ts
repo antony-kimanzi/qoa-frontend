@@ -55,7 +55,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
     try {
       const response = await loginApi({ email, password });
-      console.log("User data:", response);
+      console.log("Response:", response);
+      console.log("Response status:", response?.status);
+      console.log("Response data:", response?.data);
 
       if (response?.data?.user) {
         set({
@@ -82,6 +84,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
     try {
       const response = await registerApi(data);
+      console.log("Response:", response);
+      console.log("Response status:", response?.status);
+      console.log("Response data:", response?.data);
 
       if (response?.data?.user) {
         set({
