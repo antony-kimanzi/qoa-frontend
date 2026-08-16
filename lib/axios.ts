@@ -18,6 +18,22 @@ const isPublicEndpoint = (url: string = ""): boolean => {
   return publicEndpoints.some((endpoint) => url.includes(endpoint));
 };
 
+// Add a request interceptor to debug
+api.interceptors.request.use(
+  (config) => {
+    console.log("📤 Request:", {
+      url: config.url,
+      method: config.method,
+      withCredentials: config.withCredentials,
+      headers: config.headers,
+    });
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
 api.interceptors.response.use(
   (response) => response.data,
   async (error) => {
