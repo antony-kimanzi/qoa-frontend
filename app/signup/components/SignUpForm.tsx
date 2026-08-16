@@ -288,7 +288,7 @@ const SignUpForm = () => {
         </p>
         <Link
           href={"/products"}
-          className="text-center text-black text-md mt-2"
+          className="flex flex-row justify-center text-center text-black text-md mt-2"
         >
           <span className="underline hover:text-sky-400 hover:underline-sky-400 transition delay-150 duration-300 ease-in-out">
             Go back to shopping.
