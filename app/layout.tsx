@@ -25,6 +25,20 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: "Queen of Aroma",
   description: "Queen of Aroma - Premium Fragrances",
+  icons: {
+    icon: [
+      {
+        url: "/web-app-manifest-192x192.png",
+        sizes: "192x192",
+        type: "image/png",
+      },
+      {
+        url: "/web-app-manifest-512x512.png",
+        sizes: "512x512",
+        type: "image/png",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
